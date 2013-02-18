@@ -4,6 +4,6 @@
 
 - Based on: [SimpleCQRS](https://github.com/gregoryyoung/m-r) by [Greg Young](http://goodenoughsoftware.net/)
 
-- Uses EventStore for event persistance.
+- Uses [EventStore](http://geteventstore.com/) for event persistance.
 
 - To run the Xunit integration tests, start an instance of EventStore with the default settings.
