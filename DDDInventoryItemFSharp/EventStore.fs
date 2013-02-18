@@ -1,4 +1,6 @@
-﻿module EventStore
+﻿/// Integration with EventStore.
+[<RequireQualifiedAccess>]
+module EventStore
 
 open System
 open System.Net
