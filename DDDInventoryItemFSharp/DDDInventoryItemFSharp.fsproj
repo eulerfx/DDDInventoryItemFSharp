@@ -40,8 +40,10 @@
     <Compile Include="InventoryItem.fs" />
     <Compile Include="EventStore.fs" />
     <Compile Include="Serialization.fs" />
+    <Compile Include="ReadModels.fs" />
     <Compile Include="IntegrationTests.fs" />
-    <Content Include="Projections.js" />
+    <Content Include="FlatReadModelProjection.js" />
+    <Content Include="InventoryItemOverviewReadModel.js" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="EventStore.ClientAPI">

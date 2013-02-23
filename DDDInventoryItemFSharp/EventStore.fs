@@ -13,9 +13,9 @@ let conn () =
     conn
 
 /// Creates an event store functions with an InventoryItem-specific serializer.
-let make (conn:EventStoreConnection) (serialize:InventoryItem.Event -> string * byte array, deserialize: string * byte array -> InventoryItem.Event) =
+let make (conn:EventStoreConnection) category (serialize:InventoryItem.Event -> string * byte array, deserialize: string * byte array -> InventoryItem.Event) =
 
-    let streamId id = "InventoryItem-" + id.ToString().ToLower()
+    let streamId (id:Guid) = category + "-" + id.ToString("N").ToLower()
 
     let load id =
         let streamId = streamId id
@@ -33,3 +33,17 @@ let make (conn:EventStoreConnection) (serialize:InventoryItem.Event -> string * 
         conn.AppendToStream(streamId, expectedVersion, eventData)
 
     load,commit
+
+let makeReadModelGetter (conn:EventStoreConnection) category (deserialize:byte array -> _) =    
+    fun (aggregateId:Guid option) ->    
+        let streamId = 
+            match aggregateId with
+            | Some id -> category + "-" + id.ToString("N")
+            | _ -> category
+        let eventsSlice = conn.ReadStreamEventsBackward(streamId, -1, 1, false)
+        if eventsSlice.Status <> SliceReadStatus.Success then None
+        elif eventsSlice.Events.Length = 0 then None
+        else 
+            let lastEvent = eventsSlice.Events.[0]
+            if lastEvent.Event.EventNumber = 0 then None
+            else Some(deserialize(lastEvent.Event.Data))

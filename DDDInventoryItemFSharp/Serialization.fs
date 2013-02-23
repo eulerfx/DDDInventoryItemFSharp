@@ -9,14 +9,16 @@ open Newtonsoft.Json
 open Newtonsoft.Json.Serialization   
 
 /// A serialization helper type.
+[<CLIMutable>]
 type private InventoryItemEvent = {
     [<JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)>] 
     Name : string;        
-    [<JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)>] 
+    [<JsonProperty(DefaultValueHandling=DefaultValueHandling.Ignore)>]
+    [<DefaultValue(0)>]
     Count : int;
 }
 
-let serialize (e:InventoryItem.Event) =
+let serializeEvent (e:InventoryItem.Event) =
     let eventType,e = 
         match e with
         | InventoryItem.Created(name)         -> "Created",{Name=name;Count=0}
@@ -29,7 +31,7 @@ let serialize (e:InventoryItem.Event) =
     let data = Encoding.UTF8.GetBytes(json)
     eventType,data
 
-let deserialize (eventType:string, data:byte array) =  
+let deserializeEvent (eventType:string, data:byte array) =  
     let json = Encoding.UTF8.GetString(data)
     let e = JsonConvert.DeserializeObject<InventoryItemEvent>(json)
     match eventType with
@@ -40,4 +42,8 @@ let deserialize (eventType:string, data:byte array) =
     | "ItemsRemoved"   -> InventoryItem.ItemsRemoved(e.Count)
     | _                -> failwith "Invalid event type!"
 
-let serializer = serialize,deserialize
+let deserialize<'TReadModel> (data:byte array) =
+    let json = Encoding.UTF8.GetString(data)
+    JsonConvert.DeserializeObject<'TReadModel>(json)
+
+let eventSerializer = serializeEvent,deserializeEvent

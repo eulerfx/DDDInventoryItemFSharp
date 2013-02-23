@@ -49,7 +49,7 @@ let exec item =
 
     | Create(id, name) -> 
         Created(name) |> apply
-        
+                
     | Deactivate -> 
         item |> Assert.inactive
         Deactivated |> apply
