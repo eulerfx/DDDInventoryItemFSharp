@@ -12,18 +12,18 @@ let conn () =
     conn.Connect(IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113))
     conn
 
-/// Creates an event store functions with an InventoryItem-specific serializer.
-let make (conn:EventStoreConnection) category (serialize:InventoryItem.Event -> string * byte array, deserialize: string * byte array -> InventoryItem.Event) =
+/// Creates event store based repository.
+let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string * byte array, deserialize: Type * byte array -> obj) =
 
     let streamId (id:Guid) = category + "-" + id.ToString("N").ToLower()
 
-    let load id =
+    let load (t,id) =
         let streamId = streamId id
         let eventsSlice = conn.ReadStreamEventsForward(streamId, 1, Int32.MaxValue, false)
         eventsSlice.Events 
-        |> Seq.map (fun e -> deserialize(e.Event.EventType, e.Event.Data))
+        |> Seq.map (fun e -> deserialize(t, e.Event.Data))
 
-    let commit (id,expectedVersion) (e:InventoryItem.Event) =
+    let commit (id,expectedVersion) (e:obj) =
         let streamId = streamId id
         let eventType,data = serialize(e)
         let metaData = [||] : byte array
@@ -34,12 +34,9 @@ let make (conn:EventStoreConnection) category (serialize:InventoryItem.Event -> 
 
     load,commit
 
-let makeReadModelGetter (conn:EventStoreConnection) category (deserialize:byte array -> _) =    
-    fun (aggregateId:Guid option) ->    
-        let streamId = 
-            match aggregateId with
-            | Some id -> category + "-" + id.ToString("N")
-            | _ -> category
+// Creates a function that returns a read model from the last event of a stream.
+let makeReadModelGetter (conn:EventStoreConnection) (deserialize:byte array -> _) =
+    fun streamId ->
         let eventsSlice = conn.ReadStreamEventsBackward(streamId, -1, 1, false)
         if eventsSlice.Status <> SliceReadStatus.Success then None
         elif eventsSlice.Events.Length = 0 then None

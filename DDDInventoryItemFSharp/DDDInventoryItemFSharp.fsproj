@@ -37,13 +37,13 @@
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
   <ItemGroup>
     <Compile Include="Aggregate.fs" />
-    <Compile Include="InventoryItem.fs" />
     <Compile Include="EventStore.fs" />
     <Compile Include="Serialization.fs" />
+    <Compile Include="InventoryItem.fs" />
     <Compile Include="ReadModels.fs" />
     <Compile Include="IntegrationTests.fs" />
     <Content Include="FlatReadModelProjection.js" />
-    <Content Include="InventoryItemOverviewReadModel.js" />
+    <Content Include="OverviewReadModelProjection.js" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="EventStore.ClientAPI">
