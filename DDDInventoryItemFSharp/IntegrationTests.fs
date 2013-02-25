@@ -1,8 +1,9 @@
 ﻿module IntegrationTests
 
+
 let conn = EventStore.conn()
 
-let handleCommand = 
+let handleCommand =
     Aggregate.makeHandler 
         { zero = InventoryItem.State.Zero; apply = InventoryItem.apply; exec = InventoryItem.exec }
         (EventStore.makeRepository conn "InventoryItem" Serialization.serializer)
@@ -46,8 +47,5 @@ let getOverviewReadModel() =
     let get = EventStore.makeReadModelGetter conn (fun data -> Serialization.deserializet<ReadModels.InventoryItemOverviewReadModel>(data))
     let readModel = get "InventoryItemOverviewReadModel"
     printfn "%A" readModel
-
-[<Xunit.Fact>]
-let subscribe() =
-    ()
     
+

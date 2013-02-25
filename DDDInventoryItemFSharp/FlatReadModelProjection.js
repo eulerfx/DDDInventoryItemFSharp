@@ -13,7 +13,7 @@ fromCategory('InventoryItem').foreachStream().when({
         };
     },
     "Created": function (s, e) {
-        s.name = e.body.Name;
+        s.name = e.body.value;
         s.active = true;
         emitReadModel(s, e);
     },
@@ -22,16 +22,16 @@ fromCategory('InventoryItem').foreachStream().when({
         emitReadModel(s, e);
     },
     "Renamed": function (s, e) {
-        s.name = e.body.Name;
+        s.name = e.body.value;
         emitReadModel(s, e);
     },
     "ItemsCheckedIn": function (s, e) {
-        s.count += e.body.Count;
+        s.count += e.body.value;
         s.countChanges += 1;
         emitReadModel(s, e);
     },
     "ItemsRemoved": function (s, e) {
-        s.count -= e.body.Count;
+        s.count -= e.body.value;
         s.countChanges += 1;
         emitReadModel(s, e);
     }

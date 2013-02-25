@@ -13,7 +13,7 @@ let conn () =
     conn
 
 /// Creates event store based repository.
-let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string * byte array, deserialize: Type * byte array -> obj) =
+let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string * byte array, deserialize: Type * string * byte array -> obj) =
 
     let streamId (id:Guid) = category + "-" + id.ToString("N").ToLower()
 
@@ -21,7 +21,7 @@ let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string
         let streamId = streamId id
         let eventsSlice = conn.ReadStreamEventsForward(streamId, 1, Int32.MaxValue, false)
         eventsSlice.Events 
-        |> Seq.map (fun e -> deserialize(t, e.Event.Data))
+        |> Seq.map (fun e -> deserialize(t, e.Event.EventType, e.Event.Data))
 
     let commit (id,expectedVersion) (e:obj) =
         let streamId = streamId id

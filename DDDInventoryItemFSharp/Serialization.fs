@@ -12,25 +12,25 @@ module private JsonNet =
     open Newtonsoft.Json.Converters
     open Microsoft.FSharp.Reflection
 
-    type UnionCaseNameConverter() =
+    type GuidConverter() =
         inherit JsonConverter()
 
-        override x.CanConvert(t) = 
-            FSharpType.IsUnion(t) || (t.DeclaringType <> null && FSharpType.IsUnion(t.DeclaringType))
+        override x.CanConvert(t:Type) = t = typeof<Guid>
 
         override x.WriteJson(writer, value, serializer) =
-            let t = value.GetType()
-            let caseInfo,fieldValues = FSharpValue.GetUnionFields(value, t)
-            let fieldValue = if fieldValues.Length = 0 then null else fieldValues.[0]
-            let map = [caseInfo.Name,fieldValue] |> Map.ofList
-            serializer.Serialize(writer, map)
+            let value = value :?> Guid
+            if value <> Guid.Empty then writer.WriteValue(value.ToString("N"))
+            else writer.WriteValue("")
+        
+        override x.ReadJson(reader, t, _, serializer) = 
+            match reader.TokenType with
+            | JsonToken.Null -> Guid.Empty :> obj
+            | JsonToken.String ->
+                let str = reader.Value :?> string
+                if (String.IsNullOrEmpty(str)) then Guid.Empty :> obj
+                else new Guid(str) :> obj
+            | _ -> failwith "Invalid token when attempting to read Guid."
 
-        override x.ReadJson(reader, t, _, serializer) =        
-            let map = serializer.Deserialize(reader, typeof<Dictionary<string, obj>>) :?> Dictionary<string, obj>
-            let pair = map |> Seq.nth 0
-            let args = if pair.Value = null then [||] else [| pair.Value |]
-            let case = FSharpType.GetUnionCases(t) |> Seq.find (fun c -> c.Name = pair.Key)
-            FSharpValue.MakeUnion(case, args)
 
     type ListConverter() =
         inherit JsonConverter()
@@ -109,12 +109,100 @@ module private JsonNet =
                 FSharpValue.MakeTuple(values |> List.toArray, t)
             | _ -> failwith "invalid token"
 
+
+    type UnionCaseNameConverter() =
+        inherit JsonConverter()
+
+        override x.CanConvert(t) = 
+            FSharpType.IsUnion(t) || (t.DeclaringType <> null && FSharpType.IsUnion(t.DeclaringType))
+
+        override x.WriteJson(writer, value, serializer) =
+            let t = value.GetType()
+            let caseInfo,fieldValues = FSharpValue.GetUnionFields(value, t)
+            writer.WriteStartObject()
+            writer.WritePropertyName("case")
+            writer.WriteValue(caseInfo.Name)
+            writer.WritePropertyName("value")
+            let value = 
+                match fieldValues.Length with
+                | 0 -> null
+                | 1 -> fieldValues.[0]
+                | _ -> fieldValues :> obj
+            serializer.Serialize(writer, value)
+            writer.WriteEndObject()
+
+        override x.ReadJson(reader, t, _, serializer) =
+
+            let t = if FSharpType.IsUnion(t) then t else t.DeclaringType                
+
+            let fail() = failwith "Invalid token!"
+
+            let read (t:JsonToken) =
+                if reader.TokenType = t then
+                    let value = reader.Value
+                    reader.Read() |> ignore
+                    Some value
+                else None
+
+            let require v =
+                match v with
+                | Some o -> o
+                | None -> fail()
+
+            let shouldEqual a b = if a <> b then fail()
+
+            let readProp (n:string) =
+                read JsonToken.PropertyName |> Option.map (fun v -> if (v :?> string) <> n then fail())
+
+            read JsonToken.StartObject |> require |> ignore
+            readProp "case" |> require |> ignore
+            let case = read JsonToken.String |> require :?> string
+            readProp "value" |> ignore
+
+            let caseInfo = FSharpType.GetUnionCases(t) |> Seq.find (fun c -> c.Name = case)
+            let fields = caseInfo.GetFields()                                                        
+
+            let args = 
+                match fields.Length with
+                | 0 -> [||]
+                | 1 -> 
+                    [| serializer.Deserialize(reader, fields.[0].PropertyType) |]
+                | _ ->
+                    let tupleType = FSharpType.MakeTupleType(fields |> Seq.map (fun f -> f.PropertyType) |> Seq.toArray)
+                    let tuple = serializer.Deserialize(reader, tupleType)
+                    FSharpValue.GetTupleFields(tuple)
+            
+            FSharpValue.MakeUnion(caseInfo, args)          
+            
+
+
+//    type UnionExtractingConverter() =
+//        inherit JsonConverter()
+//
+//        override x.CanConvert(t) = 
+//            FSharpType.IsUnion(t) || (t.DeclaringType <> null && FSharpType.IsUnion(t.DeclaringType))
+//
+//        override x.WriteJson(writer, value, serializer) =
+//            let t = value.GetType()
+//            let _,fieldValues = FSharpValue.GetUnionFields(value, t)
+//            let value = 
+//                match fieldValues.Length with
+//                | 0 -> null
+//                | 1 -> fieldValues.[0]
+//                | _ -> fieldValues :> obj
+//            serializer.Serialize(writer, value)
+//
+//        override x.ReadJson(reader, t, _, serializer) =   
+//            serializer.Deserialize(reader, t)
+    
     let s = new JsonSerializer()    
+    s.Converters.Add(new GuidConverter())
     s.Converters.Add(new TupleArrayConverter())
     s.Converters.Add(new OptionConverter())
     s.Converters.Add(new ListConverter())
+    //s.Converters.Add(new UnionExtractingConverter())
     s.Converters.Add(new UnionCaseNameConverter())
-
+    
     let eventType o =
         let t = o.GetType()
         if FSharpType.IsUnion(t) || (t.DeclaringType <> null && FSharpType.IsUnion(t.DeclaringType)) then
@@ -125,14 +213,33 @@ module private JsonNet =
         
     let serialize o =
         use ms = new MemoryStream()
-        use writer = new StreamWriter(ms)
-        s.Serialize(writer, o)
+        (use jsonWriter = new JsonTextWriter(new StreamWriter(ms))
+        s.Serialize(jsonWriter, o))
         let data = ms.ToArray()
         (eventType o),data
 
-    let deserialize (t, data:byte array) =
-        use reader = new StreamReader(new MemoryStream(data), Encoding.UTF8)
-        s.Deserialize(reader, t)
+    let deserialize (t, et:string, data:byte array) =
+        use ms = new MemoryStream(data)
+        use jsonReader = new JsonTextReader(new StreamReader(ms))
+        s.Deserialize(jsonReader, t)
+
+//    let deserialize (t, et:string, data:byte array) =
+//        let case = FSharpType.GetUnionCases(t) |> Seq.find (fun c -> c.Name = et)
+//        let fields = case.GetFields()
+//        let t' =         
+//            match fields.Length with
+//            | 0 -> null
+//            | 1 -> fields.[0].PropertyType
+//            | _ -> FSharpType.MakeTupleType(fields |> Seq.map (fun f -> f.PropertyType) |> Seq.toArray)
+//        if t' <> null then
+//            use reader = new StreamReader(new MemoryStream(data), Encoding.UTF8)
+//            let body = s.Deserialize(reader, t')
+//            let args = 
+//                if FSharpType.IsTuple(t') then FSharpValue.GetTupleFields(body)
+//                elif body <> null then [|body|]
+//                else [||]
+//            FSharpValue.MakeUnion(case, args)
+//        else null
 
 let serializer = JsonNet.serialize,JsonNet.deserialize
 

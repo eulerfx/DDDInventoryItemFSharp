@@ -41,6 +41,7 @@
     <Compile Include="Serialization.fs" />
     <Compile Include="InventoryItem.fs" />
     <Compile Include="ReadModels.fs" />
+    <Compile Include="SerializationTests.fs" />
     <Compile Include="IntegrationTests.fs" />
     <Content Include="FlatReadModelProjection.js" />
     <Content Include="OverviewReadModelProjection.js" />

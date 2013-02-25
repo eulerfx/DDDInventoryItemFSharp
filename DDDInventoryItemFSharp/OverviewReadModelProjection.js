@@ -6,11 +6,11 @@ fromCategory('InventoryItem').when({
         return {total:0};
     },
     "ItemsCheckedIn": function(s, e) {
-        s.total += e.body.Count;
+        s.total += e.body.value;
         emitReadModel(s, e);
     },
     "ItemsRemoved": function(s, e) {
-        s.total -= e.body.Count;
+        s.total -= e.body.value;
         emitReadModel(s, e);
     }
 });
