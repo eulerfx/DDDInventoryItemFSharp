@@ -1,20 +1,15 @@
 ﻿module IntegrationTests
 
-
 let conn = EventStore.conn()
 
-let handleCommand =
+let handleCommand' =
     Aggregate.makeHandler 
         { zero = InventoryItem.State.Zero; apply = InventoryItem.apply; exec = InventoryItem.exec }
         (EventStore.makeRepository conn "InventoryItem" Serialization.serializer)
 
-let id = System.Guid.Parse("88085239-6f0f-48c6-b73d-017333cb99ba")
-//let id = System.Guid.NewGuid()
+let handleCommand (id,v) c = handleCommand' (id,v) c |> Async.RunSynchronously
 
-//[<Xunit.Fact>]
-//let deleteStream() =
-//    let id = "$ce-InventoryItem-88085239-6f0f-48c6-b73d"
-//    conn.DeleteStream(id, EventStore.ClientAPI.ExpectedVersion.Any)
+let id = System.Guid.Parse("88085239-6f0f-48c6-b73d-017333cb99ba")
 
 [<Xunit.Fact>]
 let createInventoryItem() =     
@@ -39,13 +34,13 @@ let removeItems() =
 [<Xunit.Fact>]
 let getFlatReadModel() =
     let get = EventStore.makeReadModelGetter conn (fun data -> Serialization.deserializet<ReadModels.InventoryItemFlatReadModel>(data))
-    let readModel = get ("InventoryItemFlatReadModel-" + id.ToString("N"))
+    let readModel = get ("InventoryItemFlatReadModel-" + id.ToString("N")) |> Async.RunSynchronously
     printfn "%A" readModel
 
 [<Xunit.Fact>]
 let getOverviewReadModel() =
     let get = EventStore.makeReadModelGetter conn (fun data -> Serialization.deserializet<ReadModels.InventoryItemOverviewReadModel>(data))
-    let readModel = get "InventoryItemOverviewReadModel"
+    let readModel = get "InventoryItemOverviewReadModel"  |> Async.RunSynchronously
     printfn "%A" readModel
     
 

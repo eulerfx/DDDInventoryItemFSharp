@@ -17,30 +17,31 @@ let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string
 
     let streamId (id:Guid) = category + "-" + id.ToString("N").ToLower()
 
-    let load (t,id) =
+    let load (t,id) = async {
         let streamId = streamId id
-        let eventsSlice = conn.ReadStreamEventsForward(streamId, 1, Int32.MaxValue, false)
-        eventsSlice.Events 
-        |> Seq.map (fun e -> deserialize(t, e.Event.EventType, e.Event.Data))
+        let! eventsSlice = conn.ReadStreamEventsForwardAsync(streamId, 1, Int32.MaxValue, false) |> Async.AwaitTask
+        return eventsSlice.Events |> Seq.map (fun e -> deserialize(t, e.Event.EventType, e.Event.Data))
+    }
 
-    let commit (id,expectedVersion) (e:obj) =
+    let commit (id,expectedVersion) (e:obj) = async {
         let streamId = streamId id
         let eventType,data = serialize(e)
         let metaData = [||] : byte array
         let eventData = new EventData(Guid.NewGuid(), eventType, true, data, metaData)
-        if expectedVersion = 0 
-            then conn.CreateStream(streamId, Guid.NewGuid(), true, metaData)
-        conn.AppendToStream(streamId, expectedVersion, eventData)
+        if expectedVersion = 0 then conn.CreateStreamAsync(streamId, Guid.NewGuid(), true, metaData) |> Async.AwaitIAsyncResult |> Async.Ignore |> ignore
+        return! conn.AppendToStreamAsync(streamId, expectedVersion, eventData) |> Async.AwaitIAsyncResult |> Async.Ignore
+    }
 
     load,commit
 
 /// Creates a function that returns a read model from the last event of a stream.
 let makeReadModelGetter (conn:EventStoreConnection) (deserialize:byte array -> _) =
-    fun streamId ->
-        let eventsSlice = conn.ReadStreamEventsBackward(streamId, -1, 1, false)
-        if eventsSlice.Status <> SliceReadStatus.Success then None
-        elif eventsSlice.Events.Length = 0 then None
+    fun streamId -> async {
+        let! eventsSlice = conn.ReadStreamEventsBackwardAsync(streamId, -1, 1, false) |> Async.AwaitTask
+        if eventsSlice.Status <> SliceReadStatus.Success then return None
+        elif eventsSlice.Events.Length = 0 then return None
         else 
             let lastEvent = eventsSlice.Events.[0]
-            if lastEvent.Event.EventNumber = 0 then None
-            else Some(deserialize(lastEvent.Event.Data))
+            if lastEvent.Event.EventNumber = 0 then return None
+            else return Some(deserialize(lastEvent.Event.Data))    
+    }

@@ -149,8 +149,6 @@ module private JsonNet =
                 | Some o -> o
                 | None -> fail()
 
-            let shouldEqual a b = if a <> b then fail()
-
             let readProp (n:string) =
                 read JsonToken.PropertyName |> Option.map (fun v -> if (v :?> string) <> n then fail())
 
