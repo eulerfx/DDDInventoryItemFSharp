@@ -34,7 +34,7 @@ let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string
 
     load,commit
 
-// Creates a function that returns a read model from the last event of a stream.
+/// Creates a function that returns a read model from the last event of a stream.
 let makeReadModelGetter (conn:EventStoreConnection) (deserialize:byte array -> _) =
     fun streamId ->
         let eventsSlice = conn.ReadStreamEventsBackward(streamId, -1, 1, false)
