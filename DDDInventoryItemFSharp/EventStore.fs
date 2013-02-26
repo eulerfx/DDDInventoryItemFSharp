@@ -7,9 +7,9 @@ open System.Net
 open EventStore.ClientAPI
 
 /// Creates and opens an EventStore connection.
-let conn () = 
+let conn endPoint =   
     let conn = EventStoreConnection.Create() 
-    conn.Connect(IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113))
+    conn.Connect(endPoint)
     conn
 
 /// Creates event store based repository.
@@ -23,9 +23,9 @@ let makeRepository (conn:EventStoreConnection) category (serialize:obj -> string
         return eventsSlice.Events |> Seq.map (fun e -> deserialize(t, e.Event.EventType, e.Event.Data))
     }
 
-    let commit (id,expectedVersion) (e:obj) = async {
+    let commit (id,expectedVersion) e = async {
         let streamId = streamId id
-        let eventType,data = serialize(e)
+        let eventType,data = serialize e
         let metaData = [||] : byte array
         let eventData = new EventData(Guid.NewGuid(), eventType, true, data, metaData)
         if expectedVersion = 0 then conn.CreateStreamAsync(streamId, Guid.NewGuid(), true, metaData) |> Async.AwaitIAsyncResult |> Async.Ignore |> ignore

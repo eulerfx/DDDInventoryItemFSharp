@@ -1,6 +1,8 @@
 ﻿module IntegrationTests
 
-let conn = EventStore.conn()
+let endPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("127.0.0.1"), 1113)
+
+let conn = EventStore.conn endPoint
 
 let handleCommand' =
     Aggregate.makeHandler 
@@ -10,6 +12,14 @@ let handleCommand' =
 let handleCommand (id,v) c = handleCommand' (id,v) c |> Async.RunSynchronously
 
 let id = System.Guid.Parse("88085239-6f0f-48c6-b73d-017333cb99ba")
+
+[<Xunit.Fact>]
+let initProjections() = 
+    let pm = new EventStore.ClientAPI.ProjectionsManager(endPoint)
+    let file p = System.IO.File.ReadAllText(@"..\..\" + p)
+    pm.CreateContinuous("FlatReadModelProjection", file "FlatReadModelProjection.js")
+    pm.CreateContinuous("OverviewReadModelProjection", file "OverviewReadModelProjection.js") 
+    ()
 
 [<Xunit.Fact>]
 let createInventoryItem() =     

@@ -43,8 +43,12 @@
     <Compile Include="ReadModels.fs" />
     <Compile Include="SerializationTests.fs" />
     <Compile Include="IntegrationTests.fs" />
-    <Content Include="FlatReadModelProjection.js" />
-    <Content Include="OverviewReadModelProjection.js" />
+    <Content Include="FlatReadModelProjection.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="OverviewReadModelProjection.js">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="EventStore.ClientAPI">
