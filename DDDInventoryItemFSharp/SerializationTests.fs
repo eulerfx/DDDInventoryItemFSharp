@@ -1,17 +1,5 @@
 ﻿module SerializationTests
 
-type ComplexType = {
-    links : int list;
-    limit : bool option;
-    name : string;
-    birth : System.DateTime;
-} 
-and ComplexEvent =
-| Created of ComplexType
-| Destroyed of System.Guid * string
-| Renamed of string
-| Limited
-
 let serialize',deserialize = Serialization.serializer
 
 let serialize o = 
@@ -26,6 +14,18 @@ let test (eet:string) (ejson:string) o =
     let et,json = serialize(o)   
     assert(eet = et)
     assert(ejson = json)
+
+type ComplexType = {
+    links : int list;
+    limit : bool option;
+    name : string;
+    birth : System.DateTime;
+} 
+and ComplexEvent =
+| Created of ComplexType
+| Destroyed of System.Guid * string
+| Renamed of string
+| Limited
 
 [<Xunit.Fact>]
 let complexTypeShouldSerialize() =

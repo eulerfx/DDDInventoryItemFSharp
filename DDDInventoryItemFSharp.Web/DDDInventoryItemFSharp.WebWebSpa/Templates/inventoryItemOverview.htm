@@ -1,0 +1,16 @@
+﻿<div>
+    <p class="row">
+        <a href="#/create" class="small button radius">Create Inventory Item</a>
+    </p>
+    <h3>Items</h3>
+    <div data-bind="foreach:items">
+        <p>
+            <span>Name:</span>
+            <span data-bind="text:name"/>            
+        </p>
+        <p>
+            <span>Count:</span>
+            <span data-bind="text:count"/>            
+        </p>
+    </div>
+</div>
