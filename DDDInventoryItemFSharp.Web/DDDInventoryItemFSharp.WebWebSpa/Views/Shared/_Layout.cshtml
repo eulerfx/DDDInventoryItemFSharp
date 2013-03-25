@@ -4,13 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>@ViewBag.Title</title>
-    @Styles.Render("~/Content/themes/base/css", "~/Content/css")
+    <link href="~/Content/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="~/Content/toastr.css" rel="stylesheet"/>        
     @Scripts.Render("~/bundles/modernizr")
 </head>
 <body>
     @RenderBody()
-
-    @Scripts.Render("~/bundles/jquery", "~/bundles/extLibs", "~/bundles/sammy", "~/bundles/localApp")
+    @Scripts.Render("~/bundles/jquery")
+    @Scripts.Render("~/bundles/extLibs", "~/bundles/sammy", "~/bundles/localApp")
     @RenderSection("scripts", required: false)    
 </body>
 </html>

@@ -83,7 +83,6 @@
   <ItemGroup>
     <Compile Include="Global.fs" />
     <Compile Include="Controllers\HomeController.fs" />
-    <Compile Include="Controllers\ContactsController.fs" />
     <Compile Include="Controllers\InventoryItemsController.fs" />
   </ItemGroup>
   <ItemGroup>

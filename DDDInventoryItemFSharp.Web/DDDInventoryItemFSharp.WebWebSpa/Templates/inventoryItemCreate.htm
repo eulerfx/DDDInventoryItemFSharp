@@ -1,14 +1,16 @@
-﻿<div class="nine.columns.centered">
-    <form id="inventoryItemForm">
-        <fieldset>
-            <legend>Create New Inventory Item</legend>
-            <div class="editor-label">Name:</div>
-            <div class="editor-field">
-                <input id="name" name="name" type="text"/>
+﻿<div class="row-fluid">
+    <h2>Add New Inventory Item</h2>
+    <form id="inventoryItemForm" class="form-horizontal">       
+        <div class="control-group">
+            <label class="control-label" for="name">Name</label>
+            <div class="controls">
+                <input id="name" name="name" type="text" placeholder="Name"/>
             </div>
-            <p>
-                <input type="button" class="small button radius" value="Save" data-bind="click: addInventoryItem" />
-            </p>
-        </fieldset>
+        </div>
+        <div class="control-group">
+            <div class="controls">
+                <button class="btn btn-primary" data-bind="click:addInventoryItem">Save</button>
+            </div>
+        </div>
     </form>
 </div>

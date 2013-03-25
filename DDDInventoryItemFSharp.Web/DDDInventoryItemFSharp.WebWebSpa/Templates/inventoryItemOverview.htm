@@ -1,16 +1,20 @@
-﻿<div>
-    <p class="row">
-        <a href="#/create" class="small button radius">Create Inventory Item</a>
-    </p>
-    <h3>Items</h3>
-    <div data-bind="foreach:items">
+﻿<div class="row-fluid">
+    <div class="span8">
+    </div>
+    <div class="span4">
         <p>
-            <span>Name:</span>
-            <span data-bind="text:name"/>            
+            <a href="#/create" class="btn">Create Inventory Item</a>
         </p>
-        <p>
-            <span>Count:</span>
-            <span data-bind="text:count"/>            
-        </p>
+        <h3>Items</h3>
+        <div data-bind="foreach:items">
+            <p>
+                <span>Name:</span>
+                <span data-bind="text:name"/>            
+            </p>
+            <p>
+                <span>Count:</span>
+                <span data-bind="text:count"/>            
+            </p>
+        </div>
     </div>
 </div>

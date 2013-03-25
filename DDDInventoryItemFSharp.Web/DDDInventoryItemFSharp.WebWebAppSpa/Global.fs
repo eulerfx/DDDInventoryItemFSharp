@@ -24,6 +24,7 @@ type BundleConfig() =
                                      "~/Scripts/underscore.js",   
                                      "~/Scripts/backbone.js",
                                      "~/Scripts/toastr.js",
+                                     "~/Scripts/bootstrap.js",
                                      "~/Scripts/knockout-2.1.0.js"))
 
         if Directory.Exists(HttpContext.Current.Server.MapPath "/Scripts/models") then                                     
@@ -40,25 +41,25 @@ type BundleConfig() =
                                      "~/Scripts/viewModels/*.js",
                                      "~/Scripts/app/router.js"))
 
-        bundles.Add(ScriptBundle("~/bundles/sammy").IncludeDirectory("~/Scripts/Sammy", "*.js", true))
+        bundles.Add(ScriptBundle("~/bundles/sammy").Include("~/Scripts/sammy-*"))
 
         bundles.Add(ScriptBundle("~/bundles/modernizr").Include("~/Scripts/modernizr-*"))
 
-        bundles.Add(StyleBundle("~/Content/css").Include("~/Content/*.css"))
+        //bundles.Add(StyleBundle("~/Content/css").Include("~/Content/*.css"))
 
-        bundles.Add(StyleBundle("~/Content/themes/base/css").Include(
-                                    "~/Content/themes/base/jquery.ui.core.css",
-                                    "~/Content/themes/base/jquery.ui.resizable.css",
-                                    "~/Content/themes/base/jquery.ui.selectable.css",
-                                    "~/Content/themes/base/jquery.ui.accordion.css",
-                                    "~/Content/themes/base/jquery.ui.autocomplete.css",
-                                    "~/Content/themes/base/jquery.ui.button.css",
-                                    "~/Content/themes/base/jquery.ui.dialog.css",
-                                    "~/Content/themes/base/jquery.ui.slider.css",
-                                    "~/Content/themes/base/jquery.ui.tabs.css",
-                                    "~/Content/themes/base/jquery.ui.datepicker.css",
-                                    "~/Content/themes/base/jquery.ui.progressbar.css",
-                                    "~/Content/themes/base/jquery.ui.theme.css"))
+//        bundles.Add(StyleBundle("~/Content/themes/base/css").Include(
+//                                    "~/Content/themes/base/jquery.ui.core.css",
+//                                    "~/Content/themes/base/jquery.ui.resizable.css",
+//                                    "~/Content/themes/base/jquery.ui.selectable.css",
+//                                    "~/Content/themes/base/jquery.ui.accordion.css",
+//                                    "~/Content/themes/base/jquery.ui.autocomplete.css",
+//                                    "~/Content/themes/base/jquery.ui.button.css",
+//                                    "~/Content/themes/base/jquery.ui.dialog.css",
+//                                    "~/Content/themes/base/jquery.ui.slider.css",
+//                                    "~/Content/themes/base/jquery.ui.tabs.css",
+//                                    "~/Content/themes/base/jquery.ui.datepicker.css",
+//                                    "~/Content/themes/base/jquery.ui.progressbar.css",
+//                                    "~/Content/themes/base/jquery.ui.theme.css"))
 
 type Route = { controller : string; action : string; id : UrlParameter }
 type ApiRoute = { id : RouteParameter }
@@ -74,18 +75,13 @@ type Global() =
         routes.MapHttpRoute("DefaultApi", "api/{controller}/{id}", { id = RouteParameter.Optional } ) |> ignore
         routes.MapRoute("Default", "{controller}/{action}/{id}", { controller = "Home"; action = "Index"; id = UrlParameter.Optional } ) |> ignore
 
-//    let configFormatters (formatters:MediaTypeFormatterCollection) =
-//        formatters.JsonFormatter.SerializerSettings.
-//        ()
-
-    static member EventStore = 
+    static member EventStore = lazy(
         let endPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("127.0.0.1"), 1113)
-        EventStore.conn endPoint
+        EventStore.conn endPoint)
 
     member this.Start() =
         AreaRegistration.RegisterAllAreas()
         registerRoutes RouteTable.Routes
         registerGlobalFilters GlobalFilters.Filters
         BundleConfig.RegisterBundles BundleTable.Bundles
-        //configFormatters GlobalConfiguration.Configuration.Formatters
         ()
