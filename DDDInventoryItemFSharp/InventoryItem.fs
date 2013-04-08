@@ -47,12 +47,9 @@ let exec item =
 
     function
 
-    | Create(id, name) -> 
-        Created(name) |> apply
+    | Create(id, name) -> Created(name) |> apply
                 
-    | Deactivate -> 
-        item |> Assert.inactive
-        Deactivated |> apply
+    | Deactivate -> item |> Assert.inactive; Deactivated |> apply
         
     | Rename(name) -> 
         name |> Assert.validName
