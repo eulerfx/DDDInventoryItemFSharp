@@ -24,7 +24,7 @@ let initProjections() =
 [<Xunit.Fact>]
 let createInventoryItem() =     
     let version = 0
-    InventoryItem.Create(id,"Pool Pump") |> handleCommand (id,version)
+    InventoryItem.Create("Pool Pump") |> handleCommand (id,version)
 
 [<Xunit.Fact>]
 let renameInventoryItem() =
