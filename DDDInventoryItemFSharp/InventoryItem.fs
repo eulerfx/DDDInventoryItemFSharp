@@ -34,20 +34,19 @@ let apply item = function
 
 /// Assertions used to maintain invariants upon command execution.
 module private Assert =
+    //let validName' n = Validation.notNull ["The name must not be null"] n
     let validName name = if System.String.IsNullOrEmpty(name) then invalidArg "name" "The name must not be null." else name
     let validCount count = if count <= 0 then invalidArg "count" "Inventory count must be positive." else count
-    let inactive item = if item.isActive = true then failwith "The item is already deactivated." else item
+    let inactive item = if item.isActive = true then failwith "The item is already deactivated."
 
 /// Executes an inventory item command.
 let exec item = 
-
     let apply event = 
         let newItem = apply item event
-        event
-
+        event |> Choice1Of2
     function
     | Create(name)        -> name |> Assert.validName |> Created |> apply                    
-    | Deactivate          -> item |> Assert.inactive |> ignore; Deactivated |> apply        
+    | Deactivate          -> item |> Assert.inactive; Deactivated |> apply        
     | Rename(name)        -> name |> Assert.validName |> Renamed |> apply        
     | CheckInItems(count) -> count |> Assert.validCount |> ItemsCheckedIn |> apply        
     | RemoveItems(count)  -> count |> Assert.validCount |> ItemsRemoved |> apply
