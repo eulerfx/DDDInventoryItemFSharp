@@ -46,5 +46,5 @@ type InventoryItemsController() =
 
     member x.Post ([<FromBody>] item:CreateInventoryItemModel) = 
         let id = Guid.NewGuid()
-        InventoryItem.Create(id,item.name) |> handleCommand (id,0)
+        InventoryItem.Create(item.name) |> handleCommand (id,0)
         id.ToString("N")

@@ -26,7 +26,8 @@ let makeHandler (aggregate:Aggregate<'TState, 'TCommand, 'TEvent>) (load:System.
         let state = Seq.fold aggregate.apply aggregate.zero events
         let event = aggregate.exec state command
         match event with
-        | Choice1Of2 event -> 
+        | Choice1Of2 event ->
+            let state = event |> aggregate.apply state
             let! _ = event |> commit (id,version)
             return Choice1Of2 ()
         | Choice2Of2 errors -> 
