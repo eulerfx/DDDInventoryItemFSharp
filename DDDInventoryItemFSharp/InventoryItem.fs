@@ -1,8 +1,6 @@
 ﻿[<RequireQualifiedAccess>]
 module InventoryItem
 
-open Validation
-
 type State = {
     isActive : bool;
 }
@@ -29,15 +27,17 @@ let apply item = function
     | ItemsCheckedIn _ -> item
     | ItemsRemoved _ -> item
 
-module private Assert =
-    let validName n = notNull ["The name must not be null."] n
-    let validCount c = validator (fun c -> c > 0) ["The item count must be positive."] c
-    let inactiveItem i = validator (fun i -> i.isActive = false) ["The item is already deactivated."] i
+open Validation
 
-let exec item =
+module private Assert =
+    let validName name = notNull ["The name must not be null."] name <* notEmptyString ["The name must not be empty"] name
+    let validCount count = validator (fun c -> c > 0) ["The item count must be positive."] count
+    let inactive state = validator (fun i -> i.isActive = false) ["The item is already deactivated."] state
+
+let exec state =
     function
-    | Create name        -> Assert.validName name *> puree (Created name)
-    | Deactivate         -> Assert.inactiveItem item *> puree Deactivated  
-    | Rename name        -> Assert.validName name *> puree (Renamed name)        
-    | CheckInItems count -> Assert.validCount count *> puree (ItemsCheckedIn count)
-    | RemoveItems count  -> Assert.validCount count *> puree (ItemsRemoved count)
+    | Create name        -> Assert.validName name   <?> Created(name)
+    | Deactivate         -> Assert.inactive state   <?> Deactivated 
+    | Rename name        -> Assert.validName name   <?> Renamed(name)
+    | CheckInItems count -> Assert.validCount count <?> ItemsCheckedIn(count)
+    | RemoveItems count  -> Assert.validCount count <?> ItemsRemoved(count)

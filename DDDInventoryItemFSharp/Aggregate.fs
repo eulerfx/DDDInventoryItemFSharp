@@ -12,7 +12,6 @@ type Aggregate<'TState, 'TCommand, 'TEvent> = {
     apply : 'TState -> 'TEvent -> 'TState;
 
     /// Executes a command on a state yielding an event.
-    //exec : 'TState -> 'TCommand -> 'TEvent;
     exec : 'TState -> 'TCommand -> Choice<'TEvent, string list>;
 }
 
