@@ -26,7 +26,6 @@ let makeHandler (aggregate:Aggregate<'TState, 'TCommand, 'TEvent>) (load:System.
         let event = aggregate.exec state command
         match event with
         | Choice1Of2 event ->
-            let state = event |> aggregate.apply state
             let! _ = event |> commit (id,version)
             return Choice1Of2 ()
         | Choice2Of2 errors -> 
@@ -38,10 +37,7 @@ let makeHandlerSync (aggregate:Aggregate<'TState, 'TCommand, 'TEvent>) (load:Sys
     fun (id,version) command ->
         let events = load (typeof<'TEvent>,id) |> Seq.cast :> 'TEvent seq
         let state = Seq.fold aggregate.apply aggregate.zero events
-        let event = aggregate.exec state command
-        match event with
-        | Choice1Of2 event ->
-            event |> aggregate.apply state |> ignore
-            event |> commit (id,version)   |> Choice1Of2 
-        | Choice2Of2 errors -> 
-            errors |> Choice2Of2
+        let result = aggregate.exec state command
+        match result with
+        | Choice1Of2 event  -> event |> commit (id,version)   |> Choice1Of2 
+        | Choice2Of2 errors -> errors |> Choice2Of2
