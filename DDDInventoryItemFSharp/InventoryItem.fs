@@ -27,7 +27,7 @@ let apply item = function
     | ItemsCheckedIn _ -> item
     | ItemsRemoved _ -> item
 
-open Validation
+open Validator
 
 module private Assert =
     let validName name = notNull ["The name must not be null."] name <* notEmptyString ["The name must not be empty"] name

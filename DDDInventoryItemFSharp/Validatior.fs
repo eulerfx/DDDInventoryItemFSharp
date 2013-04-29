@@ -1,4 +1,4 @@
-﻿module Validation
+﻿module Validator
 
 let validator predicate error x =
     if predicate x then Choice1Of2 x
@@ -7,9 +7,7 @@ let validator predicate error x =
 let (==) = LanguagePrimitives.PhysicalEquality
 let inline (!=) a b = not (a == b)
 let notNull e = validator ((!=) null) e
-let notEqual a = validator ((<>) a)
 let notEmptyString e = validator (fun (s:string) -> s.Length > 0) e
-let notNullOrEmptyString e = validator (fun (s:string) -> s != null && s.Length > 0) e
 
 /// Given a value, creates a choice 1. (Applicative functor)
 let puree = Choice1Of2
@@ -48,18 +46,3 @@ let inline (<?>) a b = lift2 (fun _ z -> z) a              (Choice1Of2 b)
 
 /// Composes a non-choice type with a choice type.
 let inline (|?>) a b = lift2 (fun z _ -> z) (Choice1Of2 a) b
-
-/// Monadic composition operator.
-let (>>=) m f =
-    match m with
-    | Choice1Of2 x -> f x
-    | Choice2Of2 x -> Choice2Of2 x
-
-let (>>.) m1 m2 = m1 >>= (fun _ -> m2)
-
-let inline flip f a b = f b a
-let inline cons a b = a::b
-
-let seqValidator f = 
-    let zero = puree []
-    Seq.map f >> Seq.fold (lift2 (flip cons)) zero    
