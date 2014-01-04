@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DDDInventoryItemFSharp", "DDDInventoryItemFSharp\DDDInventoryItemFSharp.fsproj", "{4198FAD2-A8B5-491F-A2B3-6B719C27BF5D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DDDInventoryItemFSharp.Web.UI", "DDDInventoryItemFSharp.Web\DDDInventoryItemFSharp.WebWebSpa\DDDInventoryItemFSharp.Web.UI.csproj", "{7EE3A9F8-817B-4371-BF48-12FA68010CE9}"
