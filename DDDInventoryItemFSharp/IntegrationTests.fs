@@ -1,6 +1,9 @@
 ﻿module IntegrationTests
 
-let endPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("127.0.0.1"), 1113)
+open EventStore.ClientAPI
+open EventStore.ClientAPI.SystemData
+
+let endPoint = new System.Net.IPEndPoint(System.Net.IPAddress.Parse("127.0.0.1"), 2113)
 
 let conn = EventStore.conn endPoint
 
@@ -15,10 +18,10 @@ let id = System.Guid.Parse("88085239-6f0f-48c6-b73d-017333cb99ba")
 
 [<Xunit.Fact>]
 let initProjections() = 
-    let pm = new EventStore.ClientAPI.ProjectionsManager(new EventStore.ClientAPI.Common.Log.ConsoleLogger(), endPoint)
+    let pm = new ProjectionsManager(new EventStore.ClientAPI.Common.Log.ConsoleLogger(), endPoint)
     let file p = System.IO.File.ReadAllText(@"..\..\" + p)
-    pm.CreateContinuous("FlatReadModelProjection", file "FlatReadModelProjection.js")
-    pm.CreateContinuous("OverviewReadModelProjection", file "OverviewReadModelProjection.js") 
+    pm.CreateContinuous("FlatReadModelProjection", file "FlatReadModelProjection.js", UserCredentials("admin", "changeit"))
+    pm.CreateContinuous("OverviewReadModelProjection", file "OverviewReadModelProjection.js", UserCredentials("admin", "changeit")) 
     ()
 
 [<Xunit.Fact>]
