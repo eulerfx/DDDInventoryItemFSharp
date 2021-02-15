@@ -94,4 +94,7 @@ Thumbs.db
 
 # Folder config file
 Desktop.ini
-DDDInventoryItemFSharp2/.ionide/symbolCache.db
+
+
+.fake
+.ionide

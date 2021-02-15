@@ -8,6 +8,10 @@ Based on [SimpleCQRS](https://github.com/gregoryyoung/m-r) by [Greg Young](http:
 
 Uses [EventStore](http://geteventstore.com/) for event persistance.
 
+Uses [Giraffe](https://giraffe.wiki/) for web API.
+
+Uses [Bolero](https://fsbolero.io/) for SPA Web App.
+
 To run the Xunit integration tests:
 
 * Run EventStore.SingleNode.exe --run-projections
