@@ -2,6 +2,9 @@
 [<RequireQualifiedAccess>]
 module Aggregate
 
+open System.Threading.Tasks
+open FSharp.Control.Tasks
+
 /// Represents an aggregate.
 type Aggregate<'TState, 'TCommand, 'TEvent> = {
     
@@ -18,8 +21,11 @@ type Aggregate<'TState, 'TCommand, 'TEvent> = {
 type Id = System.Guid
 
 /// Creates a persistent, async command handler for an aggregate given load and commit functions.
-let makeHandler (aggregate:Aggregate<'TState, 'TCommand, 'TEvent>) (load:System.Type * Id -> Async<obj seq>, commit:Id * int -> obj -> Async<unit>) =
-    fun (id,version) command -> async {
+let makeHandler 
+    (aggregate : Aggregate<'TState, 'TCommand, 'TEvent>)
+    (load : System.Type * Id -> Task<obj seq>, commit : Id * int64 -> obj -> Task<unit>)
+    =
+    fun (id,version) command -> task {
         let! events = load (typeof<'TEvent>,id)
         let events = events |> Seq.cast :> 'TEvent seq
         let state = Seq.fold aggregate.apply aggregate.zero events
@@ -33,11 +39,14 @@ let makeHandler (aggregate:Aggregate<'TState, 'TCommand, 'TEvent>) (load:System.
     }
 
 /// Creates a persistent command handler for an aggregate given load and commit functions.
-let makeHandlerSync (aggregate:Aggregate<'TState, 'TCommand, 'TEvent>) (load:System.Type * Id -> obj seq, commit:Id * int -> obj -> unit) =
+let makeHandlerSync 
+    (aggregate : Aggregate<'TState, 'TCommand, 'TEvent>)
+    (load : System.Type * Id -> obj seq, commit : Id * int -> obj -> unit)
+    =
     fun (id,version) command ->
         let events = load (typeof<'TEvent>,id) |> Seq.cast :> 'TEvent seq
         let state = Seq.fold aggregate.apply aggregate.zero events
         let result = aggregate.exec state command
         match result with
-        | Choice1Of2 event  -> event |> commit (id,version)   |> Choice1Of2 
+        | Choice1Of2 event  -> event |> commit (id,version) |> Choice1Of2 
         | Choice2Of2 errors -> errors |> Choice2Of2

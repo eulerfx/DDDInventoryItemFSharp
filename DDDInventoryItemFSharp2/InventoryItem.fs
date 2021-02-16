@@ -36,8 +36,8 @@ module private Assert =
 
 let exec state =
     function
-    | Create name        -> Assert.validName name   <?> Created(name)
-    | Deactivate         -> Assert.inactive state   <?> Deactivated 
-    | Rename name        -> Assert.validName name   <?> Renamed(name)
-    | CheckInItems count -> Assert.validCount count <?> ItemsCheckedIn(count)
-    | RemoveItems count  -> Assert.validCount count <?> ItemsRemoved(count)
+        | Create name        -> Assert.validName name   <?> Created(name)
+        | Deactivate         -> Assert.inactive state   <?> Deactivated 
+        | Rename name        -> Assert.validName name   <?> Renamed(name)
+        | CheckInItems count -> Assert.validCount count <?> ItemsCheckedIn(count)
+        | RemoveItems count  -> Assert.validCount count <?> ItemsRemoved(count)

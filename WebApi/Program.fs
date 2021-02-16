@@ -2,13 +2,17 @@ module WebApi.App
 
 open System
 open System.IO
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Cors.Infrastructure
 open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
+open FSharp.Control.Tasks
 open Giraffe
+open Newtonsoft.Json
+open ReadModels
 
 // ---------------------------------
 // Models
@@ -19,6 +23,22 @@ type Message =
         Text : string
     }
 
+[<CLIMutable>]
+[<JsonObject(MemberSerialization=MemberSerialization.OptOut)>]
+type InventoryItemModel = 
+    { 
+        name : string;
+        count : int;
+        active : bool;
+    }
+
+[<CLIMutable>]
+[<JsonObject(MemberSerialization=MemberSerialization.OptOut)>]
+type CreateInventoryItemModel = 
+    { 
+        name : string;
+    }
+
 // ---------------------------------
 // Views
 // ---------------------------------
@@ -26,7 +46,7 @@ type Message =
 module Views =
     open Giraffe.ViewEngine
 
-    let layout (content: XmlNode list) =
+    let layout (content : XmlNode list) =
         html [] [
             head [] [
                 title []  [ encodedText "WebApi" ]
@@ -56,13 +76,77 @@ let indexHandler (name : string) =
     let view      = Views.index model
     htmlView view
 
+let getInventory () =
+    task {
+        let! connection = Global.EventStore.Value
+        let deserializer = fun data -> Serialization.deserializet<ReadModels.InventoryItemFlatReadModel>(data)
+        let getFunc = EventStore.makeReadModelGetter connection deserializer
+        return fun (id : Guid) -> getFunc ("InventoryItemFlatReadModel-" + id.ToString("N"))
+    }
+
+let GeInventorytHandler (guid : string) : HttpHandler =
+    fun (next : HttpFunc) (ctx : HttpContext) ->
+        task {
+            //88085239-6f0f-48c6-b73d-017333cb99ba
+            if (String.IsNullOrEmpty guid) then
+                return! RequestErrors.NOT_FOUND "Not Found" next ctx
+            else
+                let! func = getInventory ()
+                let! item = func (System.Guid.Parse(guid))
+                let res =   match item with
+                            | Some item -> 
+                                let jsonResp = 
+                                    { InventoryItemModel.name = item.name
+                                      count = item.count
+                                      active = item.active }
+                                    |> json
+                                Successful.OK jsonResp
+                            | None -> RequestErrors.NOT_FOUND "Not Found" 
+
+                return! res next ctx
+        }
+
+let handleCommand' () =
+    task {
+        let! conn = Global.EventStore.Value
+        let repository = EventStore.makeRepository conn "InventoryItem" Serialization.serializer
+        let commandHandler = (Aggregate.makeHandler 
+                                {   zero = InventoryItem.State.Zero
+                                    apply = InventoryItem.apply
+                                    exec = InventoryItem.exec   }
+                                repository)
+
+        return commandHandler
+    }
+
+// let handleCommand (id, v) c = handleCommand' (id, v) c |> Async.RunSynchronously
+
+let CreateInventoryHandler : HttpHandler = 
+    fun (next : HttpFunc) (ctx : HttpContext) ->
+        task {
+            let! handleCommand = handleCommand' ()
+
+            // Binds a JSON payload to a CreateInventoryItemModel
+            let! item = ctx.BindJsonAsync<CreateInventoryItemModel>()
+
+            let id = Guid.NewGuid()
+            let! res = InventoryItem.Create(item.name) |> handleCommand (id, 0L)
+            res |> ignore
+
+            // Sends the object back to the client
+            return! Successful.OK (id.ToString()) next ctx
+        }
+
+
 let webApp =
     choose [
         GET >=>
             choose [
                 route "/" >=> indexHandler "world"
                 routef "/hello/%s" indexHandler
+                routef "/inventory/%s" GeInventorytHandler
             ]
+        POST >=> route "/inventory" >=> CreateInventoryHandler
         setStatusCode 404 >=> text "Not Found" ]
 
 // ---------------------------------

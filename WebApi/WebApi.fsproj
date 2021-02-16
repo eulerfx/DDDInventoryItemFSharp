@@ -10,9 +10,12 @@
     <PackageReference Include="Giraffe" Version="5.0.0-rc-6" />
     <PackageReference Include="Giraffe.ViewEngine" Version="1.3.*" />
     <PackageReference Include="Ply" Version="0.3.*" />
+    <PackageReference Include="EventStore.Client" Version="5.0.9" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="Global.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -22,4 +25,9 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DDDInventoryItemFSharp2\DDDInventoryItemFSharp2.fsproj" />
+  </ItemGroup>
+
 </Project>

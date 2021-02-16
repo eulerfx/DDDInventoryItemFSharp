@@ -4,48 +4,55 @@ module EventStore
 
 open System
 open System.Net
+open FSharp.Control.Tasks
 open EventStore.ClientAPI
 
 /// Creates and opens an EventStore connection.
-let conn (endPoint : string) =   
-    let conn = EventStoreConnection.Create(endPoint)
-    conn.ConnectAsync() |> Async.AwaitIAsyncResult |> Async.Ignore |> ignore
-    conn
+let conn (uri : string) = 
+    let conn = EventStoreConnection.Create(uri)
+    task {
+        do! conn.ConnectAsync()
+        return conn
+    }
+    
 
 /// Creates event store based repository.
 let makeRepository
     (conn:IEventStoreConnection)
     category 
-    (serialize:obj -> string * byte array, deserialize: Type * string * byte array -> obj) =
-
+    (serialize:obj -> string * byte array, deserialize: Type * string * byte array -> obj)
+    =
     let streamId (id:Guid) = category + "-" + id.ToString("N").ToLower()
 
-    let load (t,id) = async {
+    let load (t, id) = task {
         let streamId = streamId id
-        let! eventsSlice = conn.ReadStreamEventsForwardAsync(streamId, 1L, Int32.MaxValue, false) |> Async.AwaitTask
+        let! eventsSlice = conn.ReadStreamEventsForwardAsync(streamId, 1L, 4096, false)
         return eventsSlice.Events |> Seq.map (fun e -> deserialize(t, e.Event.EventType, e.Event.Data))
     }
 
-    let commit (id, (expectedVersion : int64)) e = async {
+    let commit (id, expectedVersion) e = task {
         let streamId = streamId id
         let eventType,data = serialize e
         let metaData = [||] : byte array
         let eventData = EventData(Guid.NewGuid(), eventType, true, data, metaData)
         
         if expectedVersion = 0L then
-            conn.AppendToStreamAsync(streamId, (int64 ExpectedVersion.Any), eventData)
-            |> Async.AwaitIAsyncResult |> Async.Ignore |> ignore
+            let! res = conn.AppendToStreamAsync(streamId, (int64 ExpectedVersion.Any), eventData) 
+            res |> ignore
         
-        return! conn.AppendToStreamAsync(streamId, expectedVersion, eventData)
-        |> Async.AwaitIAsyncResult |> Async.Ignore
+        let! res = conn.AppendToStreamAsync(streamId, expectedVersion, eventData)
+        res |> ignore
     }
 
-    load,commit
+    load, commit
 
 /// Creates a function that returns a read model from the last event of a stream.
-let makeReadModelGetter (conn:IEventStoreConnection) (deserialize:byte array -> _) =
-    fun streamId -> async {
-        let! eventsSlice = conn.ReadStreamEventsBackwardAsync(streamId, -1L, 1, false) |> Async.AwaitTask
+let makeReadModelGetter 
+    (conn : IEventStoreConnection)
+    (deserialize : byte array -> _)
+    =
+    fun streamId -> task {
+        let! eventsSlice = conn.ReadStreamEventsBackwardAsync(streamId, -1L, 1, false)
         if eventsSlice.Status <> SliceReadStatus.Success then return None
         elif eventsSlice.Events.Length = 0 then return None
         else 
