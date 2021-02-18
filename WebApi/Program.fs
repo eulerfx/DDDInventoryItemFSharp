@@ -93,17 +93,15 @@ let GeInventorytHandler (guid : string) : HttpHandler =
             else
                 let! func = getInventory ()
                 let! item = func (System.Guid.Parse(guid))
-                let res =   match item with
-                            | Some item -> 
-                                let jsonResp = 
-                                    { InventoryItemModel.name = item.name
-                                      count = item.count
-                                      active = item.active }
-                                    |> json
-                                Successful.OK jsonResp
-                            | None -> RequestErrors.NOT_FOUND "Not Found" 
-
-                return! res next ctx
+                match item with
+                    | Some item -> 
+                        let resp = 
+                            { InventoryItemModel.name = item.name
+                              count = item.count
+                              active = item.active }
+                        return! Successful.OK resp next ctx
+                    | None ->
+                        return! RequestErrors.NOT_FOUND "Not Found" next ctx
         }
 
 let handleCommand' () =
@@ -119,8 +117,6 @@ let handleCommand' () =
         return commandHandler
     }
 
-// let handleCommand (id, v) c = handleCommand' (id, v) c |> Async.RunSynchronously
-
 let CreateInventoryHandler : HttpHandler = 
     fun (next : HttpFunc) (ctx : HttpContext) ->
         task {
@@ -130,13 +126,11 @@ let CreateInventoryHandler : HttpHandler =
             let! item = ctx.BindJsonAsync<CreateInventoryItemModel>()
 
             let id = Guid.NewGuid()
-            let! res = InventoryItem.Create(item.name) |> handleCommand (id, 0L)
-            res |> ignore
+            let! __ = InventoryItem.Create(item.name) |> handleCommand (id, 0L)
 
             // Sends the object back to the client
             return! Successful.OK (id.ToString()) next ctx
         }
-
 
 let webApp =
     choose [
