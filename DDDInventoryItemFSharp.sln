@@ -7,6 +7,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Domain", "Domain\Domain.fsp
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WebApi", "WebApi\WebApi.fsproj", "{31835453-5E9F-419F-BF8E-09799647DEE2}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "WebApp.Client", "WebApp\WebApp.Client.fsproj", "{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,5 +46,17 @@ Global
 		{31835453-5E9F-419F-BF8E-09799647DEE2}.Release|x64.Build.0 = Release|Any CPU
 		{31835453-5E9F-419F-BF8E-09799647DEE2}.Release|x86.ActiveCfg = Release|Any CPU
 		{31835453-5E9F-419F-BF8E-09799647DEE2}.Release|x86.Build.0 = Release|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Debug|x64.Build.0 = Debug|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Debug|x86.Build.0 = Debug|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Release|x64.ActiveCfg = Release|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Release|x64.Build.0 = Release|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Release|x86.ActiveCfg = Release|Any CPU
+		{1FC0FDA1-20E7-40A5-AD0B-ACFF917D23B0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
