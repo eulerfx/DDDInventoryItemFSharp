@@ -3,6 +3,7 @@ module WebApp.Client.Main
 open Elmish
 open Bolero
 open Bolero.Html
+open System.Text.Json
 
 type Page =
     | Overview
@@ -12,7 +13,7 @@ type Model =
     {
         Page: Page
         AddItem: NewItem option
-        Overview: InventoryItem[] option
+        Overview: InventoryOverview option
         Error: string option
     }
 and NewItem =
@@ -23,6 +24,20 @@ and InventoryItem =
     {
         Name: string
         Count: int
+    }
+and InventoryOverview =
+    {
+        total: int
+    }
+
+/// Remote service definition.
+type InventoryService =
+    {
+        /// Get the list of all item in the collection.
+        GetOverview: unit -> Async<InventoryOverview>
+
+        /// Add a item in the collection.
+        AddItem: NewItem -> Async<unit>
     }
 
 let initModel =
@@ -36,16 +51,45 @@ let initModel =
 type Message =
     | SetPage of Page
     | GetOverview
-    | AddItem
+    | ShowOverview of InventoryOverview
+    | AddItem of NewItem
+    | Error of exn
+
+let httpClient = new System.Net.Http.HttpClient()
+
+let inventoryService : InventoryService =
+    {
+        GetOverview = fun () ->
+            async {
+                let url = "https://localhost:5001/inventory"
+                let! response = httpClient.GetAsync(url) |> Async.AwaitTask
+                response.EnsureSuccessStatusCode () |> ignore
+                let! content = response.Content.ReadAsStreamAsync() |> Async.AwaitTask
+                return! JsonSerializer.DeserializeAsync<InventoryOverview>(content).AsTask() |> Async.AwaitTask
+            }
+        AddItem = fun (newItem : NewItem) ->
+            async {
+                return ()
+            }
+    }
 
 let update message model =
     match message with
     | SetPage page -> 
-        page match
-        | Overview -> { model with Page = page }, Cmd.ofMsg GetOverview
-        | _ -> { model with Page = page }
-    | GetOverview -> { }
-    | AddItem -> { }
+        match page with
+        | Overview ->
+            { model with Page = page }, Cmd.ofMsg GetOverview
+        | _ -> { model with Page = page }, Cmd.none
+    | GetOverview ->
+        model,
+        Cmd.OfAsync.either inventoryService.GetOverview () ShowOverview Error
+    | ShowOverview overview ->
+        { model with Overview = Some overview }, Cmd.none
+    | AddItem newItem ->
+        (inventoryService.AddItem newItem) |> Async.RunSynchronously
+        { model with AddItem = Some newItem }, Cmd.none
+    | Error exn ->
+        { model with Error = Some exn.Message }, Cmd.none
 
 let router = Router.infer SetPage (fun m -> m.Page)
 
@@ -67,40 +111,25 @@ type Overview = Template<"""
 </div>""">
 
 let overviewPage model dispatch =
-    Overview
+    Overview()
         .Rows(cond model.Overview <| function
             | None ->
-                Main.EmptyData().Elt()
+                Overview.EmptyData().Elt()
             | Some overview ->
-                forEach items <| fun item ->
-                    p [] [
-                        span [] [ text "Name:" ]
-                        span [] [ text item.Name ]
-                    ]
-                    p [] [
-                        span [] [ text "Count:" ]
-                        span [] [ text item.Count ]
-                    ])
+                p [] [
+                    span [] [ text "Count:" ]
+                    span [] [ text (string overview.total) ]
+                ])
         .Elt()
 
 let view model dispatch =
-    text "Hello, world!"
+    cond model.Page <| function
+    | Overview -> overviewPage model dispatch
+    | _ -> text "Hello, world!"
 
 type MyApp() =
     inherit ProgramComponent<Model, Message>()
 
     override this.Program =
-        Program.mkSimple (fun _ -> initModel) update view
+        Program.mkProgram (fun _ -> initModel, Cmd.none) update view
         |> Program.withRouter router
-
-
-/// Remote service definition.
-type InventoryService =
-    {
-        /// Get the list of all item in the collection.
-        GetOverview: unit -> Async<InventoryItem[]>
-
-        /// Add a item in the collection.
-        AddItem: NewItem -> Async<unit>
-    }
-

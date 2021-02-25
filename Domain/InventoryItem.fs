@@ -1,6 +1,8 @@
 ﻿[<RequireQualifiedAccess>]
 module InventoryItem
 
+open System
+
 type State = {
     isActive : bool;
 }

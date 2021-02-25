@@ -39,6 +39,13 @@ type CreateInventoryItemModel =
         name : string;
     }
 
+[<CLIMutable>]
+[<JsonObject(MemberSerialization=MemberSerialization.OptOut)>]
+type CheckInInventoryItemModel = 
+    { 
+        Count : int;
+    }
+
 // ---------------------------------
 // Views
 // ---------------------------------
@@ -84,7 +91,29 @@ let getInventory () =
         return fun (id : Guid) -> getFunc ("InventoryItemFlatReadModel-" + id.ToString("N"))
     }
 
-let GeInventorytHandler (guid : string) : HttpHandler =
+let getAllItemsInInventory () =
+    task {
+        let! connection = Global.EventStore.Value
+        let deserializer = fun data -> Serialization.deserializet<ReadModels.InventoryItemFlatReadModel>(data)
+        let getFunc = EventStore.makeReadModelGetter connection deserializer
+        return fun (id : Guid) -> getFunc ("InventoryItemFlatReadModel-" + id.ToString("N"))
+    }
+
+let getOverviewInInventory () : HttpHandler =
+    fun (next : HttpFunc) (ctx : HttpContext) ->
+        task {
+            let! connection = Global.EventStore.Value
+            let deserializer = fun data -> Serialization.deserializet<ReadModels.InventoryItemOverviewReadModel>(data)
+            let getFunc = EventStore.makeReadModelGetter connection deserializer
+            let! resp = getFunc ("InventoryItemOverviewReadModel")
+            match resp with
+                    | Some item -> 
+                        return! Successful.OK item next ctx
+                    | None ->
+                        return! RequestErrors.NOT_FOUND "Not Found" next ctx
+        }
+
+let geInventorytHandler (guid : string) : HttpHandler =
     fun (next : HttpFunc) (ctx : HttpContext) ->
         task {
             //88085239-6f0f-48c6-b73d-017333cb99ba
@@ -117,7 +146,7 @@ let handleCommand' () =
         return commandHandler
     }
 
-let CreateInventoryHandler : HttpHandler = 
+let createInventoryHandler : HttpHandler = 
     fun (next : HttpFunc) (ctx : HttpContext) ->
         task {
             let! handleCommand = handleCommand' ()
@@ -132,15 +161,48 @@ let CreateInventoryHandler : HttpHandler =
             return! Successful.OK (id.ToString()) next ctx
         }
 
+let handleCheckInCommand () =
+    task {
+        let! conn = Global.EventStore.Value
+        let repository = EventStore.makeRepository conn "InventoryItem" Serialization.serializer
+        let commandHandler = (Aggregate.makeHandler 
+                                {   zero = InventoryItem.State.Zero
+                                    apply = InventoryItem.apply
+                                    exec = InventoryItem.exec   }
+                                repository)
+
+        return commandHandler
+    }
+
+let checkInItemHandler (guid : string) : HttpHandler =
+    fun (next : HttpFunc) (ctx : HttpContext) ->
+        task {
+            let! handleCommand = handleCommand' ()
+            let itemId = System.Guid.Parse(guid)
+
+            // Binds a JSON payload to a CreateInventoryItemModel
+            let! model = ctx.BindJsonAsync<CheckInInventoryItemModel>()
+            let! __ = InventoryItem.CheckInItems(model.Count) |> handleCommand (itemId, 0L)
+
+            // Sends the object back to the client
+            return! Successful.OK (id.ToString()) next ctx
+        }
+
+
 let webApp =
     choose [
         GET >=>
             choose [
                 route "/" >=> indexHandler "world"
                 routef "/hello/%s" indexHandler
-                routef "/inventory/%s" GeInventorytHandler
+                routef "/inventory/%s" geInventorytHandler
+                route "/inventory" >=> getOverviewInInventory ()
             ]
-        POST >=> route "/inventory" >=> CreateInventoryHandler
+        POST >=> 
+            choose [
+                route "/inventory/" >=> createInventoryHandler
+                routef "/inventory/%s" checkInItemHandler
+            ]
         setStatusCode 404 >=> text "Not Found" ]
 
 // ---------------------------------
@@ -158,11 +220,13 @@ let errorHandler (ex : Exception) (logger : ILogger) =
 let configureCors (builder : CorsPolicyBuilder) =
     builder
         .WithOrigins(
-            "http://localhost:5000",
-            "https://localhost:5001")
-       .AllowAnyMethod()
-       .AllowAnyHeader()
-       |> ignore
+           "http://localhost:5000",
+           "https://localhost:5001",
+           "http://localhost:5002")
+        //.AllowAnyOrigin()
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        |> ignore
 
 let configureApp (app : IApplicationBuilder) =
     let env = app.ApplicationServices.GetService<IWebHostEnvironment>()

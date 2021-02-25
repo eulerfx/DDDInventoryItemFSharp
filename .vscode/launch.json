@@ -16,6 +16,20 @@
             "internalConsoleOptions": "openOnSessionStart",
             "stopAtEntry": false,
             "justMyCode": false
-        }
+        },
+        {
+            "name": ".NET Core Launch Web Client (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "program": "dotnet",
+            "args": [
+                "run"
+            ],
+            "cwd": "${workspaceFolder}/WebApp",
+            "env": {
+                "ASPNETCORE_URLS": "http://localhost:5002",
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            }
+        },
     ]
 }

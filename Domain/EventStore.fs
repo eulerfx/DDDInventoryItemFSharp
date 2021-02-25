@@ -3,7 +3,6 @@
 module EventStore
 
 open System
-open System.Net
 open FSharp.Control.Tasks
 open EventStore.ClientAPI
 
@@ -39,9 +38,9 @@ let makeRepository
         if expectedVersion = 0L then
             let! res = conn.AppendToStreamAsync(streamId, (int64 ExpectedVersion.Any), eventData) 
             res |> ignore
-        
-        let! res = conn.AppendToStreamAsync(streamId, expectedVersion, eventData)
-        res |> ignore
+        else
+            let! res = conn.AppendToStreamAsync(streamId, expectedVersion, eventData)
+            res |> ignore
     }
 
     load, commit
